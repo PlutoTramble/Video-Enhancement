@@ -35,6 +35,14 @@ class video:
 
         return numberOfTimes
 
+    # It is necessary for encoding
+    def getExageratedFPS(self, pTargetFPS):
+        futureFPS = self.fps
+        while futureFPS < pTargetFPS:
+            futureFPS *= 2
+        
+        return futureFPS
+
     #Sets the color profile settings for ffmpeg
     def getColorProfileSettings(self, pVidOrPng:str): ## FIXME handle properly color profile
         colorInfo = os.popen(f"ffprobe -v error -show_entries "\
@@ -76,8 +84,7 @@ class video:
             return True
         else:
             return False
-
-
+        
 
 def Handler(pOptions:dict, pVideo:video):
     outputPath = pOptions["output"]
@@ -93,12 +100,12 @@ def Handler(pOptions:dict, pVideo:video):
     #And setting crf value
     if (pVideo.vidWidth > 1920 and pVideo.vidHeight > 1080) or \
             (pVideo.vidWidth > 1080 and pVideo.vidHeight > 1920):
-        print("Ultra HD mode for RIFE is enabled.")
+        print("Ultra HD mode is enabled.")
         uhd = "-u"
         crfValue = 26
     else:
         crfValue = 19
-        print("Ultra HD mode for RIFE is disabled.")
+        print("Ultra HD mode is disabled.")
 
     # Checking if there is something to do with that file
     if not pVideo.isUnderResolutionThreshold(resolutionThreshold) and \
@@ -114,11 +121,13 @@ def Handler(pOptions:dict, pVideo:video):
         
     for suffix in suffixesVideo: #Checking the video suffix
         if pVideo.suffix == suffix:
-            print("\nExtracting audio from video... \n")
-            os.system(f"ffmpeg -y -i {pVideo.path} -vn -c:a aac {tmpDirectory}/audio.m4a")
+            print("\nExtracting audio from video...")
+            os.system(f"ffmpeg -loglevel error -stats -y -i {pVideo.path} "\
+                f"-vn -c:a aac {tmpDirectory}/audio.m4a")
 
-            print("\nSegmenting video into temporary directory.\n")
-            os.system(f"ffmpeg -y -i {pVideo.path} -c:v copy -segment_time 00:02:00.00 "\
+            print("\nSegmenting video into temporary directory.")
+            os.system(f"ffmpeg -loglevel error -stats -y -i {pVideo.path} "\
+                f"-c:v copy -segment_time 00:02:00.00 "\
                 f"-f segment -reset_timestamps 1 {tmpDirectory}/vidin/%03d{pVideo.suffix}")
             
             videosInFolder = os.listdir(f"{tmpDirectory}/vidin")
@@ -134,14 +143,15 @@ def Handler(pOptions:dict, pVideo:video):
                 filelist.write("file '%s'\n" %fileLocation)
                 filelist.close()
 
-                print("\nExtracting all frames from video into temporary directory\n")
-                os.system(f"ffmpeg -i {tmpDirectory}/vidin/{vidInFolder} "\
+                print("\nExtracting all frames from video into temporary directory.")
+                os.system(f"ffmpeg -loglevel error -stats -y "\
+                    f"-i {tmpDirectory}/vidin/{vidInFolder} "\
                     f"-r {str(pVideo.fps)} {pVideo.getColorProfileSettings('png')} "\
                     f"{tmpDirectory}/in/%08d.png")
 
                 # SRMD
                 if pVideo.isUnderResolutionThreshold(resolutionThreshold):
-                    print("\nRunning SRMD to denoise the video\n")
+                    print("\nRunning SRMD to denoise the video.")
                     os.chdir("AIs/")
                     os.system(f"./srmd-ncnn-vulkan -i {tmpDirectory}/in "\
                         f"-o {tmpDirectory}/out -n 8 -s 2")
@@ -154,7 +164,7 @@ def Handler(pOptions:dict, pVideo:video):
 
                 #RIFE
                 if pVideo.getEstimNumOfRun != 0:
-                    print("\nRunning RIFE to interpolate the video\n")
+                    print("\nRunning RIFE to interpolate the video.")
                     os.chdir("AIs/")
                     print(f"It's going to run {pVideo.getEstimNumOfRun(targetFPS)} times\n")
 
@@ -167,11 +177,13 @@ def Handler(pOptions:dict, pVideo:video):
                         os.mkdir(f"{tmpDirectory}/out")
 
                     os.chdir("..")
-                    print("\nFinished running RIFE.\n")
+                    print("\nFinished running RIFE.")
 
-                os.system(f"ffmpeg -framerate {targetFPS} "\
+                print(f"\nEncoding {vidInFolder[:-4]}.mp4")
+                os.system(f"ffmpeg -loglevel error -stats "\
+                    f"-y -framerate {pVideo.getExageratedFPS(targetFPS)} "\
                     f"-i {tmpDirectory}/in/%08d.png -c:v libx265 -crf {crfValue} "\
-                    f"-preset veryslow {pVideo.getColorProfileSettings('vid')} "\
+                    f"-preset veryslow -r {targetFPS} {pVideo.getColorProfileSettings('vid')} "\
                     f"{tmpDirectory}/vidout/{vidInFolder[:-4]}.mp4")
             
             #output for ffmpeg
@@ -182,17 +194,18 @@ def Handler(pOptions:dict, pVideo:video):
                 ffmpegOutput = f"{outputPath}/{pVideo.filename[:-4]}"
 
             ## Writing the final result
-            os.system(f"ffmpeg -f concat -safe 0 -i {tmpDirectory}/temporary_file.txt "\
-            f"-c copy {ffmpegOutput}a.mp4")
+            print(f"\nFinalizing {pVideo.filename[:-4]}.mp4\n")
+            os.system(f"ffmpeg -loglevel error -f concat -safe 0 "\
+                f"-i {tmpDirectory}/temporary_file.txt -c copy {ffmpegOutput}a.mp4")
 
             if os.path.exists(f"{tmpDirectory}/audio.m4a"): # If the video has audio
-                os.system(f"ffmpeg -i {ffmpegOutput}a.mp4 "\
+                os.system(f"ffmpeg -loglevel error -i {ffmpegOutput}a.mp4 "\
                 f"-i {tmpDirectory}/audio.m4a -c:a copy "\
                 f"-c:v copy {ffmpegOutput}n.mp4")
             else:
                 shutil.copy(f"{ffmpegOutput}a.mp4", f"{ffmpegOutput}n.mp4")
             
-            os.system(f"ffmpeg -i {pVideo.path} -i {ffmpegOutput}n.mp4 "\
+            os.system(f"ffmpeg -loglevel error -i {pVideo.path} -i {ffmpegOutput}n.mp4 "\
             f"-map 1 -c copy -map_metadata 0 -tag:v hvc1 {ffmpegOutput}.mp4")
 
             os.remove(f"{ffmpegOutput}a.mp4")
