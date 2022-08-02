@@ -147,22 +147,31 @@ def Handler(pOptions:dict, pVideo:video):
                     os.chdir("..")
                     print("\nFinished running SRMD.\n")
 
-                #IFRNet
+                #RIFE
                 if pVideo.getEstimNumOfRun != 0:
-                    print("\nRunning IFRNet to interpolate the video\n")
+                    print("\nRunning RIFE to interpolate the video\n")
                     os.chdir("AIs/")
                     print(f"It's going to run {pVideo.getEstimNumOfRun(targetFPS)} times\n")
 
+                    #Estimating if RIFE needs UHD mode
+                    uhd = ""
+                    if (pVideo.vidWidth > 1920 and pVideo.vidHeight >= 1081) or \
+                            (pVideo.vidWidth >= 1081 and pVideo.vidHeight >= 1921):
+                        print("Ultra HD mode for RIFE is enabled.")
+                        uhd = "-u"
+                    else:
+                        print("Ultra HD mode for RIFE is disabled.")
+
                     for i in range(pVideo.getEstimNumOfRun(targetFPS)):
-                        os.system(f"./ifrnet-ncnn-vulkan -i {tmpDirectory}/in "\
+                        os.system(f"./rife-ncnn-vulkan -i {tmpDirectory}/in "\
                             f"-o {tmpDirectory}/out "\
-                            "-m IFRNet_L_Vimeo90K")
+                            f"-m rife-v3.1 {uhd}")
                         shutil.rmtree(f"{tmpDirectory}/in")
                         os.rename(f"{tmpDirectory}/out", f"{tmpDirectory}/in")
                         os.mkdir(f"{tmpDirectory}/out")
 
                     os.chdir("..")
-                    print("\nFinished running IFRNet.\n")
+                    print("\nFinished running RIFE.\n")
 
                 os.system(f"ffmpeg -framerate {targetFPS} "\
                     f"-i {tmpDirectory}/in/%08d.png -c:v libx265 -crf {crfValue} "\
