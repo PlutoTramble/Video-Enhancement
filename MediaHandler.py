@@ -80,21 +80,25 @@ class video:
 
 
 def Handler(pOptions:dict, pVideo:video):
-    inputPath = pOptions["input"]
     outputPath = pOptions["output"]
     tmpDirectory = f"{pOptions['temporaryDirectoryLocation']}/ave-tmp"
-    inputIsFile = pOptions["isInputAFile"]
     outputIsFile = pOptions["isOutputAFile"]
     targetFPS = pOptions["targetFPS"]
     resolutionThreshold = pOptions['resolutionThreshold']
-    suffixesVideo = [".avi", ".mp4", ".mov", ".wmv", ".3gp", ".mpg", "leotmv"]
+    suffixesVideo = [".avi", ".mp4", ".mov", ".wmv", ".3gp", ".mpg", ".leotmv"]
     crfValue = 0
+    uhd = ""
 
-    #crfValue
-    if pVideo.vidWidth > 1920:
+    #Estimating if RIFE needs UHD mode if it ever needs to run
+    #And setting crf value
+    if (pVideo.vidWidth > 1920 and pVideo.vidHeight > 1080) or \
+            (pVideo.vidWidth > 1080 and pVideo.vidHeight > 1920):
+        print("Ultra HD mode for RIFE is enabled.")
+        uhd = "-u"
         crfValue = 26
     else:
         crfValue = 19
+        print("Ultra HD mode for RIFE is disabled.")
 
     # Checking if there is something to do with that file
     if not pVideo.isUnderResolutionThreshold(resolutionThreshold) and \
@@ -114,7 +118,7 @@ def Handler(pOptions:dict, pVideo:video):
             os.system(f"ffmpeg -y -i {pVideo.path} -vn -c:a aac {tmpDirectory}/audio.m4a")
 
             print("\nSegmenting video into temporary directory.\n")
-            os.system(f"ffmpeg -y -i {inputPath} -c:v copy -segment_time 00:02:00.00 "\
+            os.system(f"ffmpeg -y -i {pVideo.path} -c:v copy -segment_time 00:02:00.00 "\
                 f"-f segment -reset_timestamps 1 {tmpDirectory}/vidin/%03d{pVideo.suffix}")
             
             videosInFolder = os.listdir(f"{tmpDirectory}/vidin")
@@ -154,15 +158,6 @@ def Handler(pOptions:dict, pVideo:video):
                     os.chdir("AIs/")
                     print(f"It's going to run {pVideo.getEstimNumOfRun(targetFPS)} times\n")
 
-                    #Estimating if RIFE needs UHD mode
-                    uhd = ""
-                    if (pVideo.vidWidth > 1920 and pVideo.vidHeight >= 1081) or \
-                            (pVideo.vidWidth >= 1081 and pVideo.vidHeight >= 1921):
-                        print("Ultra HD mode for RIFE is enabled.")
-                        uhd = "-u"
-                    else:
-                        print("Ultra HD mode for RIFE is disabled.")
-
                     for i in range(pVideo.getEstimNumOfRun(targetFPS)):
                         os.system(f"./rife-ncnn-vulkan -i {tmpDirectory}/in "\
                             f"-o {tmpDirectory}/out "\
@@ -197,7 +192,7 @@ def Handler(pOptions:dict, pVideo:video):
             else:
                 shutil.copy(f"{ffmpegOutput}a.mp4", f"{ffmpegOutput}n.mp4")
             
-            os.system(f"ffmpeg -i {inputPath} -i {ffmpegOutput}n.mp4 "\
+            os.system(f"ffmpeg -i {pVideo.path} -i {ffmpegOutput}n.mp4 "\
             f"-map 1 -c copy -map_metadata 0 -tag:v hvc1 {ffmpegOutput}.mp4")
 
             os.remove(f"{ffmpegOutput}a.mp4")
