@@ -97,7 +97,8 @@ def Handler(pOptions:dict, pVideo:video):
         crfValue = 19
 
     # Checking if there is something to do with that file
-    if not pVideo.isUnderResolutionThreshold(resolutionThreshold) and pVideo.getEstimNumOfRun(targetFPS) == 0:
+    if not pVideo.isUnderResolutionThreshold(resolutionThreshold) and \
+            pVideo.getEstimNumOfRun(targetFPS) == 0:
         print(f"Nothing to do with {pVideo.filename}")
 
         if not outputIsFile:
@@ -181,25 +182,23 @@ def Handler(pOptions:dict, pVideo:video):
             #output for ffmpeg
             ffmpegOutput = ""
             if outputIsFile:
-                ffmpegOutput = outputPath
+                ffmpegOutput = outputPath[:-4]
             else:
-                ffmpegOutput = f"{outputPath}/{pVideo.filename}"
+                ffmpegOutput = f"{outputPath}/{pVideo.filename[:-4]}"
 
             ## Writing the final result
             os.system(f"ffmpeg -f concat -safe 0 -i {tmpDirectory}/temporary_file.txt "\
-            f"-c copy {ffmpegOutput[:-4]}a.mp4")
+            f"-c copy {ffmpegOutput}a.mp4")
 
             if os.path.exists(f"{tmpDirectory}/audio.m4a"): # If the video has audio
-                os.system(f"ffmpeg -i {ffmpegOutput[:-4]}a.mp4 "\
+                os.system(f"ffmpeg -i {ffmpegOutput}a.mp4 "\
                 f"-i {tmpDirectory}/audio.m4a -c:a copy "\
-                f"-c:v copy {ffmpegOutput[:-4]}n.mp4")
+                f"-c:v copy {ffmpegOutput}n.mp4")
             else:
-                shutil.copy(f"{ffmpegOutput[:-4]}a.mp4", f"{ffmpegOutput[:-4]}n.mp4")
+                shutil.copy(f"{ffmpegOutput}a.mp4", f"{ffmpegOutput}n.mp4")
             
-            os.system(f"ffmpeg -i {inputPath} -i {ffmpegOutput[:-4]}n.mp4 "\
-            f"-map 1 -c copy -map_metadata 0 -tag:v hvc1 {ffmpegOutput[:-4]}.mp4")
+            os.system(f"ffmpeg -i {inputPath} -i {ffmpegOutput}n.mp4 "\
+            f"-map 1 -c copy -map_metadata 0 -tag:v hvc1 {ffmpegOutput}.mp4")
 
-            os.remove(f"{ffmpegOutput[:-4]}a.mp4")
-            os.remove(f"{ffmpegOutput[:-4]}n.mp4")
-
-            shutil.rmtree(tmpDirectory)
+            os.remove(f"{ffmpegOutput}a.mp4")
+            os.remove(f"{ffmpegOutput}n.mp4")

@@ -107,6 +107,17 @@ def getOpt(argv):
 
     return options
 
+def makeTempDir():
+    print(f"Making temporary directory in : {tmpDirectory}")
+    if os.path.exists(tmpDirectory):
+        rmtree(tmpDirectory)
+
+    os.mkdir(tmpDirectory)
+    os.mkdir(f"{tmpDirectory}/in")
+    os.mkdir(f"{tmpDirectory}/out")
+    os.mkdir(f"{tmpDirectory}/vidin")
+    os.mkdir(f"{tmpDirectory}/vidout")
+
 
 
 if __name__ == "__main__":
@@ -127,18 +138,17 @@ if __name__ == "__main__":
         raise FileNotFoundError("There are file(s) that are missing."\
             " Please go look Where to put stuff in the repository.")
 
-    # Making temporary directory
-    print(f"Making temporary directory in : {tmpDirectory}")
-    if os.path.exists(tmpDirectory):
+    ## Where the handling happens
+    if options["isInputAFile"]:
+        makeTempDir()
+        Video = MediaHandler.video(options["input"])
+        MediaHandler.Handler(options, Video)
         rmtree(tmpDirectory)
-
-    os.mkdir(tmpDirectory)
-    os.mkdir(f"{tmpDirectory}/in")
-    os.mkdir(f"{tmpDirectory}/out")
-    os.mkdir(f"{tmpDirectory}/vidin")
-    os.mkdir(f"{tmpDirectory}/vidout")
-
-    ## Conversion
-    if options["isInputAFile"] == True:
-        Vid = MediaHandler.video(options["input"])
-        MediaHandler.Handler(options, Vid)
+    else:
+        videosInInput = os.listdir(options["input"])
+        videosInInput.sort()
+        for vid in videosInInput:
+            makeTempDir()
+            Video = MediaHandler.video(f'{options["input"]}/{vid}')
+            MediaHandler.Handler(options, Video)
+            rmtree(tmpDirectory)
