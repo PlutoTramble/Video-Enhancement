@@ -87,22 +87,35 @@ class video:
         
 
 def Handler(pOptions:dict, pVideo:video):
+    suffixesVideo = [".avi", ".mp4", ".mov", ".wmv", ".3gp", ".mpg", ".leotmv"]
     outputPath = pOptions["output"]
     tmpDirectory = f"{pOptions['temporaryDirectoryLocation']}/ave-tmp"
     outputIsFile = pOptions["isOutputAFile"]
     targetFPS = pOptions["targetFPS"]
     resolutionThreshold = pOptions['resolutionThreshold']
-    suffixesVideo = [".avi", ".mp4", ".mov", ".wmv", ".3gp", ".mpg", ".leotmv"]
     crfValue = 0
     uhd = ""
 
-    #Estimating if RIFE needs UHD mode if it ever needs to run
-    #And setting crf value
+    ## Setting the parameters specific for the video
+    # Estimating if RIFE needs UHD mode if it ever needs to run
+    # And setting crf value
+    # Limiting fps if resolution is too big
     if (pVideo.vidWidth > 1920 and pVideo.vidHeight > 1080) or \
             (pVideo.vidWidth > 1080 and pVideo.vidHeight > 1920):
         print("Ultra HD mode is enabled.")
         uhd = "-u"
         crfValue = 26
+        if targetFPS > 60 and \
+            ((pVideo.vidWidth > 2560 and pVideo.vidHeight > 1440) or \
+            (pVideo.vidWidth > 1440 and pVideo.vidHeight > 2560)):
+            print("The target FPS is set at 60 because the "\
+                "video's resolution is higher than 2k.")
+            targetFPS = 60
+        elif (targetFPS > 120):
+            print("The target FPS is set at 120 because the "\
+                "video's resolution is higher than 1080p.")
+            targetFPS = 120
+
     else:
         crfValue = 19
         print("Ultra HD mode is disabled.")
@@ -183,7 +196,8 @@ def Handler(pOptions:dict, pVideo:video):
                 os.system(f"ffmpeg -loglevel error -stats "\
                     f"-y -framerate {pVideo.getExageratedFPS(targetFPS)} "\
                     f"-i {tmpDirectory}/in/%08d.png -c:v libx265 -crf {crfValue} "\
-                    f"-preset veryslow -r {targetFPS} {pVideo.getColorProfileSettings('vid')} "\
+                    f"-preset veryslow -r {targetFPS} "\
+                    f"{pVideo.getColorProfileSettings('vid')} "\
                     f"{tmpDirectory}/vidout/{vidInFolder[:-4]}.mp4")
             
             #output for ffmpeg
