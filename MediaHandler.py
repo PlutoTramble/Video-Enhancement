@@ -1,3 +1,4 @@
+## FIXME Instead of os.system, do subprocess.
 import sys
 import cv2
 import os
@@ -78,13 +79,35 @@ class video:
     def isUnderResolutionThreshold(self, pWidthxHeight:str):
         widthThreshold = int(pWidthxHeight.lower().split('x')[0])
         heightThreshold = int(pWidthxHeight.lower().split('x')[1])
-
         if (widthThreshold >= self.vidWidth and heightThreshold >= self.vidHeight) or \
                 (heightThreshold >= self.vidWidth and widthThreshold >= self.vidHeight):
             return True
         else:
             return False
-        
+
+    # To fix too much bitrate for certain videos
+    def ffmpegBitrateCommand(self):
+        totalSecondsDuration = int(self.vidTotalFrames / self.fps)
+        filesize = os.path.getsize(self.path)
+        bitrate = int((filesize/totalSecondsDuration)/1024*8)
+
+        # The option will not work if it's under 1080p
+        if (self.vidWidth <= 1920 and self.vidHeight <= 1080) or \
+                (self.vidWidth <= 1080 and self.vidHeight <= 1920):
+            return ""
+
+        if bitrate < 10000:
+            return ""
+        elif bitrate > 40000:
+            return "-maxrate 40000k -bufsize 40000k"
+        elif bitrate > 20000:
+            bitrate = bitrate + ((bitrate * 20) / 100)
+            return f"-maxrate {bitrate} -bufsize {bitrate}"
+        elif bitrate > 10000:
+            bitrate = bitrate + ((bitrate * 20) / 100)
+            return f"-maxrate {bitrate} -bufsize {bitrate}"
+
+
 
 def Handler(pOptions:dict, pVideo:video):
     suffixesVideo = [".avi", ".mp4", ".mov", ".wmv", ".3gp", ".mpg", ".leotmv"]
@@ -93,8 +116,31 @@ def Handler(pOptions:dict, pVideo:video):
     outputIsFile = pOptions["isOutputAFile"]
     targetFPS = pOptions["targetFPS"]
     resolutionThreshold = pOptions['resolutionThreshold']
+    ffmpegOutput = ""
     crfValue = 0
     uhd = ""
+
+    # Checking if there is something to do with that file
+    if not pVideo.isUnderResolutionThreshold(resolutionThreshold) and \
+            pVideo.getEstimNumOfRun(targetFPS) == 0:
+        print(f"Nothing to do with {pVideo.filename}")
+
+        if not outputIsFile:
+            print("Copying anyway to output folder")
+            shutil.copy(pVideo.path, outputPath)
+        
+        return
+
+    # Multiplying the resolution by 2 so param can adapt
+    if pVideo.isUnderResolutionThreshold(resolutionThreshold):
+        pVideo.vidHeight = pVideo.vidHeight * 2
+        pVideo.vidWidth = pVideo.vidWidth * 2
+
+    # Output file for ffmpeg
+    if outputIsFile:
+        ffmpegOutput = outputPath[:-4]
+    else:
+        ffmpegOutput = f"{outputPath}/{pVideo.filename[:-4]}"
 
     ## Setting the parameters specific for the video
     # Estimating if RIFE needs UHD mode if it ever needs to run
@@ -111,27 +157,15 @@ def Handler(pOptions:dict, pVideo:video):
             print("The target FPS is set at 60 because the "\
                 "video's resolution is higher than 2k.")
             targetFPS = 60
-        elif (targetFPS > 120):
+        elif targetFPS > 120:
             print("The target FPS is set at 120 because the "\
                 "video's resolution is higher than 1080p.")
             targetFPS = 120
-
     else:
         crfValue = 19
         print("Ultra HD mode is disabled.")
-
-    # Checking if there is something to do with that file
-    if not pVideo.isUnderResolutionThreshold(resolutionThreshold) and \
-            pVideo.getEstimNumOfRun(targetFPS) == 0:
-        print(f"Nothing to do with {pVideo.filename}")
-
-        if not outputIsFile:
-            print("Copying anyway to output folder")
-            shutil.copy(pVideo.path, outputPath)
-        
-        return
             
-        
+    ## Starting the process
     for suffix in suffixesVideo: #Checking the video suffix
         if pVideo.suffix == suffix:
             print("\nExtracting audio from video...")
@@ -177,35 +211,35 @@ def Handler(pOptions:dict, pVideo:video):
 
                 #RIFE
                 if pVideo.getEstimNumOfRun != 0:
-                    print("\nRunning RIFE to interpolate the video.")
+                    print("\nRunning interpolation software.")
                     os.chdir("AIs/")
                     print(f"It's going to run {pVideo.getEstimNumOfRun(targetFPS)} times\n")
 
                     for i in range(pVideo.getEstimNumOfRun(targetFPS)):
-                        os.system(f"./rife-ncnn-vulkan -i {tmpDirectory}/in "\
-                            f"-o {tmpDirectory}/out "\
-                            f"-m rife-v3.1 {uhd}")
+                        if ((pVideo.vidWidth > 1920 and pVideo.vidHeight > 1080) or \
+                                (pVideo.vidWidth > 1080 and pVideo.vidHeight > 1920)) or \
+                                pVideo.fps <= 20:
+                            os.system(f"./rife-ncnn-vulkan -i {tmpDirectory}/in "\
+                                f"-o {tmpDirectory}/out "\
+                                f"-m rife-v2.3 {uhd}")
+                        else:
+                            os.system(f"./ifrnet-ncnn-vulkan -i {tmpDirectory}/in "\
+                                f"-o {tmpDirectory}/out "\
+                                f"-m IFRNet_L_Vimeo90K {uhd}")
                         shutil.rmtree(f"{tmpDirectory}/in")
                         os.rename(f"{tmpDirectory}/out", f"{tmpDirectory}/in")
                         os.mkdir(f"{tmpDirectory}/out")
 
                     os.chdir("..")
-                    print("\nFinished running RIFE.")
+                    print("\nFinished running interpolation software.")
 
                 print(f"\nEncoding {vidInFolder[:-4]}.mp4")
                 os.system(f"ffmpeg -loglevel error -stats "\
                     f"-y -framerate {pVideo.getExageratedFPS(targetFPS)} "\
                     f"-i {tmpDirectory}/in/%08d.png -c:v libx265 -crf {crfValue} "\
-                    f"-preset veryslow -r {targetFPS} "\
+                    f"-preset veryslow {pVideo.ffmpegBitrateCommand()} -r {targetFPS} "\
                     f"{pVideo.getColorProfileSettings('vid')} "\
                     f"{tmpDirectory}/vidout/{vidInFolder[:-4]}.mp4")
-            
-            #output for ffmpeg
-            ffmpegOutput = ""
-            if outputIsFile:
-                ffmpegOutput = outputPath[:-4]
-            else:
-                ffmpegOutput = f"{outputPath}/{pVideo.filename[:-4]}"
 
             ## Writing the final result
             print(f"\nFinalizing {pVideo.filename[:-4]}.mp4\n")

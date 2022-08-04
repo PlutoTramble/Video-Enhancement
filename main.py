@@ -132,7 +132,9 @@ if __name__ == "__main__":
             "Follow the instructions on the repository.")
     
     if not os.path.exists(f"{current_dir}/AIs/rife-ncnn-vulkan") or \
-            not os.path.exists(f"{current_dir}/AIs/rife-v3.1") or \
+            not os.path.exists(f"{current_dir}/AIs/rife-v2.3") or \
+            not os.path.exists(f"{current_dir}/AIs/ifrnet-ncnn-vulkan") or \
+            not os.path.exists(f"{current_dir}/AIs/IFRNet_L_Vimeo90K") or \
             not os.path.exists(f"{current_dir}/AIs/srmd-ncnn-vulkan") or \
             not os.path.exists(f"{current_dir}/AIs/models-srmd"):
         raise FileNotFoundError("There are file(s) that are missing."\
