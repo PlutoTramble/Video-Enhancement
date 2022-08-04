@@ -4,6 +4,8 @@ import cv2
 import os
 from pathlib import Path
 import shutil
+import subprocess
+import time
 
 class video:
     def __init__(self, pPath: str):
@@ -109,6 +111,24 @@ class video:
 
 
 
+
+def AIRunning(pProcess: subprocess.Popen, pTempDirIn:str, pTempDirOut:str):
+    while True: # While process is running
+        if pProcess.poll() is not None:
+            print("")
+            break
+        else:
+            #Show progress
+            numOfFilesIn = len(os.listdir(pTempDirIn))
+            numOfFilesOut = len(os.listdir(pTempDirOut))
+            filesOutNeeded = numOfFilesIn * 2
+            percentageCompleted = "{:.2f}".format(numOfFilesOut/filesOutNeeded*100)
+            sys.stdout.write(f"\rFiles in input: {numOfFilesIn} | "\
+                f"Files in output: {numOfFilesOut} | "\
+                f"{percentageCompleted} % Completed |")
+            sys.stdout.flush()
+            time.sleep(5)
+
 def Handler(pOptions:dict, pVideo:video):
     suffixesVideo = [".avi", ".mp4", ".mov", ".wmv", ".3gp", ".mpg", ".leotmv"]
     outputPath = pOptions["output"]
@@ -200,32 +220,39 @@ def Handler(pOptions:dict, pVideo:video):
                 if pVideo.isUnderResolutionThreshold(resolutionThreshold):
                     print("\nRunning SRMD to denoise the video.")
                     os.chdir("AIs/")
-                    os.system(f"./srmd-ncnn-vulkan -i {tmpDirectory}/in "\
-                        f"-o {tmpDirectory}/out -n 8 -s 2")
-
+                    process = subprocess.Popen(["./srmd-ncnn-vulkan", \
+                        "-i", f"{tmpDirectory}/in", "-o", \
+                        f"{tmpDirectory}/out", "-n", "8", "-s", "2"], \
+                        shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                    AIRunning(process, f"{tmpDirectory}/in", f"{tmpDirectory}/out")
                     shutil.rmtree(f"{tmpDirectory}/in")
                     os.rename(f"{tmpDirectory}/out", f"{tmpDirectory}/in")
                     os.mkdir(f"{tmpDirectory}/out")
                     os.chdir("..")
                     print("\nFinished running SRMD.\n")
 
-                #RIFE
+                #Interpolation
                 if pVideo.getEstimNumOfRun != 0:
                     print("\nRunning interpolation software.")
                     os.chdir("AIs/")
-                    print(f"It's going to run {pVideo.getEstimNumOfRun(targetFPS)} times\n")
+                    print(f"It's going to run {pVideo.getEstimNumOfRun(targetFPS)} times")
 
                     for i in range(pVideo.getEstimNumOfRun(targetFPS)):
+                        print(f"\n{i + 1} out of {pVideo.getEstimNumOfRun(targetFPS)}")
+                        process = ""
                         if ((pVideo.vidWidth > 1920 and pVideo.vidHeight > 1080) or \
                                 (pVideo.vidWidth > 1080 and pVideo.vidHeight > 1920)) or \
                                 pVideo.fps <= 20:
-                            os.system(f"./rife-ncnn-vulkan -i {tmpDirectory}/in "\
-                                f"-o {tmpDirectory}/out "\
-                                f"-m rife-v2.3 {uhd}")
+                            process = subprocess.Popen(["./rife-ncnn-vulkan", "-i", \
+                                f"{tmpDirectory}/in", "-o", f"{tmpDirectory}/out", "-m", \
+                                "rife-v2.3", f"{uhd}"], shell=False, \
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                         else:
-                            os.system(f"./ifrnet-ncnn-vulkan -i {tmpDirectory}/in "\
-                                f"-o {tmpDirectory}/out "\
-                                f"-m IFRNet_L_Vimeo90K {uhd}")
+                            process = subprocess.Popen(["./ifrnet-ncnn-vulkan", "-i", \
+                                f"{tmpDirectory}/in", "-o", f"{tmpDirectory}/out", "-m", \
+                                "IFRNet_L_Vimeo90K", f"{uhd}"], \
+                                shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                        AIRunning(process, f"{tmpDirectory}/in", f"{tmpDirectory}/out")
                         shutil.rmtree(f"{tmpDirectory}/in")
                         os.rename(f"{tmpDirectory}/out", f"{tmpDirectory}/in")
                         os.mkdir(f"{tmpDirectory}/out")

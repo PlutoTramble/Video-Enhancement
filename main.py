@@ -2,6 +2,7 @@ import sys
 import getopt
 import os
 from shutil import rmtree
+import subprocess
 
 import MediaHandler
 
@@ -139,6 +140,14 @@ if __name__ == "__main__":
             not os.path.exists(f"{current_dir}/AIs/models-srmd"):
         raise FileNotFoundError("There are file(s) that are missing."\
             " Please go look Where to put stuff in the repository.")
+
+    # Checking if user have ffmpeg
+    try:
+        subprocess.call(["ffmpeg"], shell=False, \
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except OSError("You need to install ffmpeg before running this program."):
+        sys.exit(2)
+    
 
     ## Where the handling happens
     if options["isInputAFile"]:

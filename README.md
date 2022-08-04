@@ -2,6 +2,8 @@ It is very much work in progress
 # Auto Video Enhancer
 A script written in Python that automates the process of enhancing digital videos with the help of a few AIs. When the video is under a resolution of 720x480, or depending your options, it will double the resolution with SRMD. Also, you can set a target frames per second in the options and RIFE will interpolate it. The video output will be encoded by ffmpeg with libx265.
 
+### Note
+Depending on your system and the video itself, it can take a very long time before one video is done. Make sure that you have a good system and patience.
 
 ## About RIFE, IFRNET and SRMD
 ### RIFE
@@ -49,6 +51,4 @@ The directory should look like this:
 ![My Image](images/whereToPutStuff.png)
 
 # TODO
-* Use subprocess instead of os.system
 * Make install script
-* Make progress indicator for some subprocesses
