@@ -81,8 +81,8 @@ class video:
     def isUnderResolutionThreshold(self, pWidthxHeight:str):
         widthThreshold = int(pWidthxHeight.lower().split('x')[0])
         heightThreshold = int(pWidthxHeight.lower().split('x')[1])
-        if (widthThreshold >= self.vidWidth and heightThreshold >= self.vidHeight) or \
-                (heightThreshold >= self.vidWidth and widthThreshold >= self.vidHeight):
+        if ((widthThreshold >= self.vidWidth and heightThreshold >= self.vidHeight) or \
+                (heightThreshold >= self.vidWidth and widthThreshold >= self.vidHeight)):
             return True
         else:
             return False
@@ -112,7 +112,7 @@ class video:
 
 
 
-def AIRunning(pProcess: subprocess.Popen, pTempDirIn:str, pTempDirOut:str):
+def AIRunning(pProcess: subprocess.Popen, pTempDirIn:str, pTempDirOut:str, isSRMD: bool):
     while True: # While process is running
         if pProcess.poll() is not None:
             print("")
@@ -122,7 +122,10 @@ def AIRunning(pProcess: subprocess.Popen, pTempDirIn:str, pTempDirOut:str):
             numOfFilesIn = len(os.listdir(pTempDirIn))
             numOfFilesOut = len(os.listdir(pTempDirOut))
             filesOutNeeded = numOfFilesIn * 2
-            percentageCompleted = "{:.2f}".format(numOfFilesOut/filesOutNeeded*100)
+            if isSRMD:
+                percentageCompleted = "{:.2f}".format(numOfFilesOut/numOfFilesIn*100)
+            else:
+                percentageCompleted = "{:.2f}".format(numOfFilesOut/filesOutNeeded*100)
             sys.stdout.write(f"\rFiles in input: {numOfFilesIn} | "\
                 f"Files in output: {numOfFilesOut} | "\
                 f"{percentageCompleted} % Completed |")
@@ -150,11 +153,6 @@ def Handler(pOptions:dict, pVideo:video):
             shutil.copy(pVideo.path, outputPath)
         
         return
-
-    # Multiplying the resolution by 2 so param can adapt
-    if pVideo.isUnderResolutionThreshold(resolutionThreshold):
-        pVideo.vidHeight = pVideo.vidHeight * 2
-        pVideo.vidWidth = pVideo.vidWidth * 2
 
     # Output file for ffmpeg
     if outputIsFile:
@@ -224,7 +222,7 @@ def Handler(pOptions:dict, pVideo:video):
                         "-i", f"{tmpDirectory}/in", "-o", \
                         f"{tmpDirectory}/out", "-n", "8", "-s", "2"], \
                         shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                    AIRunning(process, f"{tmpDirectory}/in", f"{tmpDirectory}/out")
+                    AIRunning(process, f"{tmpDirectory}/in", f"{tmpDirectory}/out", True)
                     shutil.rmtree(f"{tmpDirectory}/in")
                     os.rename(f"{tmpDirectory}/out", f"{tmpDirectory}/in")
                     os.mkdir(f"{tmpDirectory}/out")
@@ -238,21 +236,28 @@ def Handler(pOptions:dict, pVideo:video):
                     print(f"It's going to run {pVideo.getEstimNumOfRun(targetFPS)} times")
 
                     for i in range(pVideo.getEstimNumOfRun(targetFPS)):
-                        print(f"\n{i + 1} out of {pVideo.getEstimNumOfRun(targetFPS)}")
-                        process = ""
-                        if ((pVideo.vidWidth > 1920 and pVideo.vidHeight > 1080) or \
-                                (pVideo.vidWidth > 1080 and pVideo.vidHeight > 1920)) or \
-                                pVideo.fps <= 20:
-                            process = subprocess.Popen(["./rife-ncnn-vulkan", "-i", \
-                                f"{tmpDirectory}/in", "-o", f"{tmpDirectory}/out", "-m", \
-                                "rife-v2.3", f"{uhd}"], shell=False, \
-                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                        else:
-                            process = subprocess.Popen(["./ifrnet-ncnn-vulkan", "-i", \
-                                f"{tmpDirectory}/in", "-o", f"{tmpDirectory}/out", "-m", \
-                                "IFRNet_L_Vimeo90K", f"{uhd}"], \
-                                shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                        AIRunning(process, f"{tmpDirectory}/in", f"{tmpDirectory}/out")
+                        #process = ""
+                        # if ((pVideo.vidWidth > 1920 and pVideo.vidHeight > 1080) or \
+                        #         (pVideo.vidWidth > 1080 and pVideo.vidHeight > 1920)) or \
+                        #         (pVideo.fps <= 25) or \
+                        #         (len(os.listdir(f"{tmpDirectory}/in")) >= 3235): # tmp: ifrnet can't do more than 3235 images in 1080p
+                        #     process = subprocess.Popen(["./rife-ncnn-vulkan", "-i", \
+                        #         f"{tmpDirectory}/in", "-o", f"{tmpDirectory}/out", "-m", \
+                        #         "rife-v2.3", f"{uhd}"], shell=False, \
+                        #         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                        #     print("Running RIFE...")
+                        # else:
+                        #     process = subprocess.Popen(["./ifrnet-ncnn-vulkan", "-i", \
+                        #         f"{tmpDirectory}/in", "-o", f"{tmpDirectory}/out", "-m", \
+                        #         "IFRNet_L_Vimeo90K", f"{uhd}"], \
+                        #         shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                        #     print("Running IFRNet")
+                        process = subprocess.Popen(["./rife-ncnn-vulkan", "-i", \
+                            f"{tmpDirectory}/in", "-o", f"{tmpDirectory}/out", "-m", \
+                            "rife-v2.3", f"{uhd}"], shell=False, \
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                        AIRunning(process, f"{tmpDirectory}/in", f"{tmpDirectory}/out", False)
+                        pVideo.fps = pVideo.fps * 2
                         shutil.rmtree(f"{tmpDirectory}/in")
                         os.rename(f"{tmpDirectory}/out", f"{tmpDirectory}/in")
                         os.mkdir(f"{tmpDirectory}/out")
