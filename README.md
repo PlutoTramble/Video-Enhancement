@@ -8,12 +8,12 @@ Depending on your system and the video itself, it can take a very long time befo
 ## About RIFE, IFRNET and SRMD
 ### RIFE
 RIFE is used to interpolate videos. In this case, it's used for videos that are more than 1080p.
-For more information, feel free to go on ltkong218's repository: https://github.com/megvii-research/ECCV2022-RIFE
+For more information, feel free to go on hzwer's repository: https://github.com/megvii-research/ECCV2022-RIFE
 Also, make sure to ckeck out nihui's for vulkan support: https://github.com/nihui/rife-ncnn-vulkan
 
 ### IFRNet
 IFRNet is used to interpolate videos. In this case, it's used for videos that are less than 1080p.
-For more information, feel free to go on hzwer's repository: https://github.com/ltkong218/IFRNet
+For more information, feel free to go on ltkong218's repository: https://github.com/ltkong218/IFRNet
 Also, make sure to ckeck out nihui's for vulkan support: https://github.com/nihui/ifrnet-ncnn-vulkan
 
 ### SRMD
