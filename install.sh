@@ -51,6 +51,9 @@ if [ -d "AIs/" -a -f "main.py" ]; then
     mv ifrnet-ncnn-vulkan-20220720-$OS/ifrnet-ncnn-vulkan ../AIs/
     rm -r ifrnet-ncnn-vulkan-20220720-$OS/
     rm ifrnet.zip
+else
+    echo "File and directory not found. Please run this in the working directory"
+    exit 2
 fi
 
 echo "Finished installing files in AIs directory."
