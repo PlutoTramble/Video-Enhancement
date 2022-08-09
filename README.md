@@ -54,6 +54,5 @@ The directory should look like this:
 ![My Image](images/whereToPutStuff.png)
 
 # TODO
-* Make install script
-* Make it work on Mac OS
+* Make it work on Mac OS (Needs testing)
 * Make it work on Windows
