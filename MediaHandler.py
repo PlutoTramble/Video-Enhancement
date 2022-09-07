@@ -89,7 +89,7 @@ class video:
 
     # To fix too much bitrate for certain videos
     def ffmpegBitrateCommand(self):
-        totalSecondsDuration = int(self.vidTotalFrames / self.fps)
+        totalSecondsDuration = float(self.vidTotalFrames / self.fps)
         filesize = os.path.getsize(self.path)
         bitrate = int((filesize/totalSecondsDuration)/1024*8)
 
