@@ -9,15 +9,14 @@ import MediaHandler
 current_dir = os.getcwd()
 
 
-def getOpt(argv):
-    options = {"input": "",
-               "output": "",
-               "temporaryDirectoryLocation": "",
-               "isInputAFile": True,
-               "isOutputAFile": True,
-               "targetFPS": 60,
-               "resolutionThreshold": "720x480"
-               }
+def get_settings(argv):
+    settings = {"input": "",
+                "output": "",
+                "temporaryDirectoryLocation": "",
+                "isInputAFile": True,
+                "isOutputAFile": True,
+                "targetFPS": 60,
+                "resolutionThreshold": "720x480"}
 
     try:
         opts, args = getopt.getopt(argv, "hi:o:t:f:r:",
@@ -32,13 +31,13 @@ def getOpt(argv):
     for option, argument in opts:
         # Option help
         if option == '-h':
-            print("\nmain.py -i <input-file/folder> -o <output-file/folder>\n")
-            print("-h to show argument help")
-            print("-t to indicate where you want to create "
-                  "your temporary directory (To reduce wear on your storage)")
-            print("-f to target a specific framerate. "
-                  "Defaults at 60 and you can't go more than 180.")
-            print("-r if the specified resolution is under " 
+            print("main.py -i <input-file/folder> -o <output-file/folder>\n"
+                  "-h to show argument help\n"
+                  "-t to indicate where you want to create "
+                  "your temporary directory (To reduce wear on your storage)\n"
+                  "-f to target a specific framerate. "
+                  "Defaults at 60 and you can't go more than 180.\n"
+                  "-r if the specified resolution is under "
                   "what you wrote in this format : \"<number>x<number>\" "
                   "it will double the resolution. Defaults at 720x480")
             sys.exit()
@@ -48,11 +47,11 @@ def getOpt(argv):
             path = f"{current_dir}/{argument}"
             if argument[0] == "/":
                 path = argument
-            options["input"] = path
+            settings["input"] = path
 
             if os.path.exists(path):
                 if os.path.isdir(path):
-                    options["isInputAFile"] = False
+                    settings["isInputAFile"] = False
             else:
                 raise IOError("Either the file or directory does not exist for the input")
 
@@ -61,54 +60,55 @@ def getOpt(argv):
             path = f"{current_dir}/{argument}"
             if argument[0] == "/":
                 path = argument
-            options["output"] = path
+            settings["output"] = path
 
             if os.path.exists(path):  # if not, assume it will output a file
                 if os.path.isfile(path):
                     print("The file already exist for the output argument.")
-                    response = input("Do you wish to overwrite it? " \
-                                     "\nIt will delete immediately. y/n ")
+                    response = input("Do you wish to overwrite it?\n"
+                                     "It will delete immediately. y/n ")
                     if response[0].lower() == 'y':
                         os.remove(path)
                     else:
                         print("Stoping program...")
                         sys.exit()
                 else:
-                    options["isOutputAFile"] = False
+                    settings["isOutputAFile"] = False
 
         # Argument for temporary directory location
         elif option in ("-t", "--tmp-location"):
             path = f"{current_dir}/{argument}"
             if argument[0] == "/":
                 path = argument
-            options["temporaryDirectoryLocation"] = path
+
+            settings["temporaryDirectoryLocation"] = path
 
             if os.path.exists(path):
                 if os.path.isfile(path):
-                    raise IOError("The path specified for " \
+                    raise IOError("The path specified for "
                                   "the temporary directory is a file.")
             else:
-                raise IOError("The path specified for the " \
+                raise IOError("The path specified for the "
                               "temporary directory doesn't exist.")
 
         # Argument for frames per second
         elif option in ("-f", "--fps"):
             if int(argument) > 180:
-                options["targetFPS"] = 180
+                settings["targetFPS"] = 180
             else:
-                options["targetFPS"] = int(argument)
+                settings["targetFPS"] = int(argument)
 
         # Nothing to do for the resolution threshold.
 
     # Assuring that it's logical
-    if options['temporaryDirectoryLocation'] == "":
-        options["temporaryDirectoryLocation"] = current_dir
+    if settings['temporaryDirectoryLocation'] == "":
+        settings["temporaryDirectoryLocation"] = current_dir
 
-    if options["isInputAFile"] == False and \
-            options["isOutputAFile"] == True:
+    if settings["isInputAFile"] is False and \
+            settings["isOutputAFile"] is True:
         raise IOError("It's impossible to take a whole directory into a file.")
 
-    return options
+    return settings
 
 
 def makeTempDir():
