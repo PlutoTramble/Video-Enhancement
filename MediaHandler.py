@@ -29,22 +29,22 @@ class video:
 
     # How many times does the interpolation AI
     # needs to run to reach the target frame per second
-    def get_estim_num_of_run(self, pTargetFPS):
+    def get_estim_num_of_run(self, p_target_fps):
         number_of_times = 0
         future_fps = self.fps
-        while future_fps < pTargetFPS:
+        while future_fps < p_target_fps:
             future_fps *= 2
             number_of_times += 1
 
         return number_of_times
 
     # It is necessary for encoding
-    def getExageratedFPS(self, pTargetFPS):
-        futureFPS = self.fps
-        while futureFPS < pTargetFPS:
-            futureFPS *= 2
+    def get_exagerated_fps(self, p_target_fps):
+        future_fps = self.fps
+        while future_fps < p_target_fps:
+            future_fps *= 2
         
-        return futureFPS
+        return future_fps
 
     #Sets the color profile settings for ffmpeg
     def getColorProfileSettings(self, pVidOrPng:str): ## FIXME handle properly color profile
