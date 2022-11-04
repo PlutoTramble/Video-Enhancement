@@ -16,11 +16,11 @@ class video:
 
         # Frames
         self.fps = float(self.__video.get(cv2.CAP_PROP_FPS))
-        self.vidTotalFrames = (self.__video.get(cv2.CAP_PROP_FRAME_COUNT))
+        self.vid_total_frames = (self.__video.get(cv2.CAP_PROP_FRAME_COUNT))
 
         # Resolution
-        self.vidWidth = int(self.__video.get(cv2.CAP_PROP_FRAME_WIDTH ))
-        self.vidHeight = int(self.__video.get(cv2.CAP_PROP_FRAME_HEIGHT ))
+        self.vid_width = int(self.__video.get(cv2.CAP_PROP_FRAME_WIDTH ))
+        self.vid_height = int(self.__video.get(cv2.CAP_PROP_FRAME_HEIGHT ))
 
         # Path and filename
         self.path = pPath
