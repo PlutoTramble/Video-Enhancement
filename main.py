@@ -25,7 +25,8 @@ def get_settings(argv):
                                     "tmp-location=", "fps=",
                                     "resolution-threshold="])
     except getopt.getopt.GetoptError:
-        print("main.py -i <input-file/folder> -o <output-file/folder>")
+        print("main.py -i <input-file/folder> -o <output-file/folder>"
+              " -t <Temp dir location>")
         sys.exit(2)
 
     for option, argument in opts:
@@ -53,7 +54,8 @@ def get_settings(argv):
                 if os.path.isdir(path):
                     settings["isInputAFile"] = False
             else:
-                raise IOError("Either the file or directory does not exist for the input")
+                raise IOError("Either the file or directory "
+                              "does not exist for the input")
 
         # Argument for output
         elif option in ("-o", "--output-file/folder"):
@@ -111,27 +113,27 @@ def get_settings(argv):
     return settings
 
 
-def makeTempDir():
-    print(f"Making temporary directory in : {tmpDirectory}")
-    if os.path.exists(tmpDirectory):
-        rmtree(tmpDirectory)
+def make_temp_dir():
+    print(f"Making temporary directory in : {tmp_directory}")
+    if os.path.exists(tmp_directory):
+        rmtree(tmp_directory)
 
-    os.mkdir(tmpDirectory)
-    os.mkdir(f"{tmpDirectory}/in")
-    os.mkdir(f"{tmpDirectory}/out")
-    os.mkdir(f"{tmpDirectory}/vidin")
-    os.mkdir(f"{tmpDirectory}/vidout")
+    os.mkdir(tmp_directory)
+    os.mkdir(f"{tmp_directory}/in")
+    os.mkdir(f"{tmp_directory}/out")
+    os.mkdir(f"{tmp_directory}/vidin")
+    os.mkdir(f"{tmp_directory}/vidout")
 
 
 if __name__ == "__main__":
-    options = getOpt(sys.argv[1:])
-    tmpDirectory = f'{options["temporaryDirectoryLocation"]}/ave-tmp'
+    settings = get_settings(sys.argv[1:])
+    tmp_directory = f'{settings["temporaryDirectoryLocation"]}/ave-tmp'
 
     # Checking if the "AIs" folder and its content exists"
     if not os.path.exists(f"{current_dir}/AIs"):
         os.mkdir(f"{current_dir}/AIs")
-        raise FileNotFoundError("The \"AIs\" directory didn't exist. " \
-                                "The program created it but you need to put stuff in it. " \
+        raise FileNotFoundError("The \"AIs\" directory didn't exist. "
+                                "The program created it but you need to put stuff in it. "
                                 "Follow the instructions on the repository.")
 
     if not os.path.exists(f"{current_dir}/AIs/rife-ncnn-vulkan") or \
@@ -140,27 +142,28 @@ if __name__ == "__main__":
             not os.path.exists(f"{current_dir}/AIs/IFRNet_L_Vimeo90K") or \
             not os.path.exists(f"{current_dir}/AIs/srmd-ncnn-vulkan") or \
             not os.path.exists(f"{current_dir}/AIs/models-srmd"):
-        raise FileNotFoundError("There are file(s) that are missing." \
-                                " Please go look Where to put stuff in the repository.")
+        raise FileNotFoundError("There are file(s) that are missing. "
+                                "Please go look Where to put stuff in the repository.")
 
     # Checking if user have ffmpeg
     try:
-        subprocess.call(["ffmpeg"], shell=False, \
-                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.call(["ffmpeg"], shell=False,
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL)
     except OSError("You need to install ffmpeg before running this program."):
         sys.exit(2)
 
-    ## Where the handling happens
-    if options["isInputAFile"]:
-        makeTempDir()
-        Video = MediaHandler.video(options["input"])
-        MediaHandler.Handler(options, Video)
-        rmtree(tmpDirectory)
+    # Where the handling happens
+    if settings["isInputAFile"]:
+        make_temp_dir()
+        Video = MediaHandler.video(settings["input"])
+        MediaHandler.Handler(settings, Video)
+        rmtree(tmp_directory)
     else:
-        videosInInput = os.listdir(options["input"])
+        videosInInput = os.listdir(settings["input"])
         videosInInput.sort()
         for vid in videosInInput:
-            makeTempDir()
-            Video = MediaHandler.video(f'{options["input"]}/{vid}')
-            MediaHandler.Handler(options, Video)
-            rmtree(tmpDirectory)
+            make_temp_dir()
+            Video = MediaHandler.video(f'{settings["input"]}/{vid}')
+            MediaHandler.Handler(settings, Video)
+            rmtree(tmp_directory)
