@@ -29,14 +29,14 @@ class video:
 
     # How many times does the interpolation AI
     # needs to run to reach the target frame per second
-    def getEstimNumOfRun(self, pTargetFPS):
-        numberOfTimes = 0
-        futureFPS = self.fps
-        while futureFPS < pTargetFPS:
-            futureFPS *= 2
-            numberOfTimes += 1
+    def get_estim_num_of_run(self, pTargetFPS):
+        number_of_times = 0
+        future_fps = self.fps
+        while future_fps < pTargetFPS:
+            future_fps *= 2
+            number_of_times += 1
 
-        return numberOfTimes
+        return number_of_times
 
     # It is necessary for encoding
     def getExageratedFPS(self, pTargetFPS):
