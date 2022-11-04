@@ -156,14 +156,14 @@ if __name__ == "__main__":
     # Where the handling happens
     if settings["isInputAFile"]:
         make_temp_dir()
-        Video = MediaHandler.video(settings["input"])
-        MediaHandler.Handler(settings, Video)
+        video = MediaHandler.video(settings["input"])
+        MediaHandler.Handler(settings, video)
         rmtree(tmp_directory)
     else:
-        videosInInput = os.listdir(settings["input"])
-        videosInInput.sort()
-        for vid in videosInInput:
+        videos_in_input = os.listdir(settings["input"])
+        videos_in_input.sort()
+        for vid in videos_in_input:
             make_temp_dir()
-            Video = MediaHandler.video(f'{settings["input"]}/{vid}')
-            MediaHandler.Handler(settings, Video)
+            video = MediaHandler.video(f'{settings["input"]}/{vid}')
+            MediaHandler.Handler(settings, video)
             rmtree(tmp_directory)
